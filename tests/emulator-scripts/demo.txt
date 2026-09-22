@@ -1,0 +1,5 @@
+ls
+cd "Arg 1"
+follow
+cd "Hello" "How are you"
+exit
