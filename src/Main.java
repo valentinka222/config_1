@@ -23,25 +23,10 @@ public class Main {
      */
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
-        String vfsPath = null;
-        String scriptPath = null;
 
-        for (int i = 0; i < args.length; i++) {
-            switch (args[i]) {
-                case "--vfs-path":
-                    if ((i+1) < args.length) {
-                        vfsPath = args[++i];
-                    }
-                    break;
-                case "--script":
-                    if ((i+1) < args.length) {
-                        scriptPath = args[++i];
-                    }
-                    break;
-                default:
-                    System.out.println("Неизвестная команда");
-            }
-        }
+        ArrayList<String> paths = checkParams(args);
+        String vfsPath = paths.get(0);
+        String scriptPath = paths.get(1);
 
         printParams(vfsPath, scriptPath);
 
@@ -65,6 +50,36 @@ public class Main {
             }
 
         }
+    }
+
+    /**
+     * Проходится по аргументам командной строки и сохраняет путь
+     * к VFS и путь к стартовому скрипту
+     * @param args аргументы командной строки: --vfs-path, --script
+     */
+    public static ArrayList<String> checkParams(String[] args) {
+        String vfsPath = null;
+        String scriptPath = null;
+        for (int i = 0; i < args.length; i++) {
+            switch (args[i]) {
+                case "--vfs-path":
+                    if ((i+1) < args.length) {
+                        vfsPath = args[++i];
+                    }
+                    break;
+                case "--script":
+                    if ((i+1) < args.length) {
+                        scriptPath = args[++i];
+                    }
+                    break;
+                default:
+                    System.out.println("Неизвестная команда");
+            }
+        }
+        ArrayList<String> paths = new ArrayList<>();
+        paths.add(vfsPath);
+        paths.add(scriptPath);
+        return paths;
     }
     /**
      * Выводит в консоль все параметры запуска эмулятора.
@@ -148,7 +163,7 @@ public class Main {
      * разделителями.
      *
      * @param line строка, введенная пользователем
-     * @ return список аргументов, полученых после разбора строки
+     * @return список аргументов, полученых после разбора строки
      */
     public static ArrayList<String> parseLine(String line) {
         ArrayList<String> args = new ArrayList<>();
