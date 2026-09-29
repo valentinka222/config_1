@@ -14,6 +14,8 @@ import java.util.Scanner;
  * и выполнения стартового скрипта.
  */
 public class Main {
+    private static VfsFolder vfsRoot;
+
     /**
      * Точка входа в приложение. Разбирает аргументы командной
      * строки, выводит их, при наличии стартового скрипта выполняет
@@ -29,6 +31,10 @@ public class Main {
         String scriptPath = paths.get(1);
 
         printParams(vfsPath, scriptPath);
+
+        if (vfsPath != null) {
+            loadVfs(vfsPath);
+        }
 
         if (scriptPath != null) {
             runScript(scriptPath);
@@ -81,6 +87,39 @@ public class Main {
         paths.add(scriptPath);
         return paths;
     }
+
+    /**
+     * Загружает VFS по указанному пути и сохраняет в поле vfsRoot. Если
+     * загрузка не удалась, возвращает сообщение об ошибке
+     * @param vfsPath путь к XML файлу
+     */
+    public static void loadVfs(String vfsPath) {
+        try {
+            vfsRoot = VfsLoader.load(vfsPath);
+            System.out.println("VFS успешно загружена:");
+            printTree(vfsRoot, 0);
+        } catch (Exception e) {
+            System.out.println("Ошибка загрузки VFS");
+        }
+    }
+
+    /**
+     * Выводит в консоль структуру дерева с отступом, отражающим уровень
+     * вложенности
+     * @param node узел дерева, с которого начинаем вывод
+     * @param depth текущий уровень вложенности
+     */
+    public static void printTree(VfsNode node, int depth) {
+        String indent = "  ".repeat(depth);
+        System.out.println(indent + node.getName());
+
+        if (node instanceof VfsFolder folder) {
+            for (VfsNode child : folder.getChildren()) {
+                printTree(child, depth+1);
+            }
+        }
+    }
+
     /**
      * Выводит в консоль все параметры запуска эмулятора.
      *
