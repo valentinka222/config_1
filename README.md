@@ -13,6 +13,8 @@
 
 Этап 4: основные команды - реальная логика ls и cd по дереву VFS, команды pwd и clear.
 
+Этап 5: дополнительная команда - chown для смены владельца папки/файла в памяти.
+
 ## Сборка и запуск
 
 ```bash
@@ -45,6 +47,7 @@ java -cp out Main --vfs-path path/to/vfs.xml --script path/to/script.txt
 - Команда `ls` выводит содержимое текущей папки VFS.
 - Команда `pwd` выводит текущий путь внутри VFS от корня.
 - Команда `clear` очищает экран терминала.
+- Команда `chown` меняет владельца файла/папки в текущей директории VFS.
 
 ## Примеры работы
 
@@ -87,4 +90,13 @@ user@host:~$ cd papka
 user@host:~$ cd ..
 user@host:~$ pwd
 /root
+```
+Смена владельца:
+```
+user@host:~$ chown ivan readme.txt
+Владелец readme.txt изменен на ivan
+user@host:~$ chown ivan notexist.txt
+Файл или папка notexist.txt не найдена
+user@host:~$ chown ivan
+Неверный синтаксис команды
 ```

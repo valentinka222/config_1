@@ -1,0 +1,11 @@
+ls
+chown ivan readme.txt
+ls
+cd Documents
+ls
+chown petya Projects
+ls
+chown
+chown ivan
+chown ivan nonexistent.txt
+exit

@@ -323,6 +323,32 @@ public class Main {
     }
 
     /**
+     * Меняет владельца файла или папки. Изменение происходит только в памяти
+     * @param args новый владелец и имя папки/файла
+     */
+    public static void handleChown(ArrayList<String> args) {
+        if (vfsRoot == null) {
+            System.out.println("VFS не загружена");
+            return;
+        }
+        if (args.size() != 2) {
+            System.out.println("Неверный синтаксис команды");
+            return;
+        }
+        String newOwner = args.getFirst();
+        String targetName = args.get(1);
+
+        VfsFolder currentFolder = pathStack.getLast();
+        VfsNode target = findChild(currentFolder, targetName);
+        if (target == null) {
+            System.out.println("Файл или папка " + targetName + " не найдена");
+            return;
+        }
+        target.setOwner(newOwner);
+        System.out.println("Владелец " + targetName + " изменен на " + newOwner);
+    }
+
+    /**
      * Выполняет одну команду с переданными аргументами
      *
      * @param command имя команды
@@ -342,6 +368,9 @@ public class Main {
                 break;
             case "pwd":
                 handlePwd();
+                break;
+            case "chown":
+                handleChown(args);
                 break;
             case "exit":
                 System.out.println("Выполняется выход из программы...");
