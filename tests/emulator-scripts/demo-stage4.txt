@@ -1,0 +1,19 @@
+ls
+cd Documents/
+cd Documents
+pwd
+ls
+cd Projects
+pwd
+ls
+cd config1
+pwd
+ls
+cd ..
+pwd
+cd ..
+pwd
+cd nonexistent
+clear
+ls
+exit

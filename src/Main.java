@@ -4,6 +4,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 /**
@@ -15,6 +16,8 @@ import java.util.Scanner;
  */
 public class Main {
     private static VfsFolder vfsRoot;
+    private static List<VfsFolder> pathStack = new ArrayList<>();
+    private static final int CLEAR_LINES_COUNT = 50;
 
     /**
      * Точка входа в приложение. Разбирает аргументы командной
@@ -96,6 +99,8 @@ public class Main {
     public static void loadVfs(String vfsPath) {
         try {
             vfsRoot = VfsLoader.load(vfsPath);
+            pathStack.clear();
+            pathStack.add(vfsRoot);
             System.out.println("VFS успешно загружена:");
             printTree(vfsRoot, 0);
         } catch (Exception e) {
@@ -229,6 +234,95 @@ public class Main {
     }
 
     /**
+     * Ищет среди детей папки узел с именем.
+     * @param folder папка, в которой ищем
+     * @param name искомое имя
+     * @return найденый узел, либо null
+     */
+    private static VfsNode findChild(VfsFolder folder, String name) {
+        for (VfsNode child : folder.getChildren()) {
+            if (child.getName().equals(name)) {
+                return child;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Меняет текущую папку. Поддерживает переход в подпапку по имени
+     * и подъем на уровень через "..".
+     * @param args аргументы команды: имя папки или ".."
+     */
+    public static void handleCd(ArrayList<String> args) {
+        if (vfsRoot == null) {
+            System.out.println("VFS не загружена");
+            return;
+        }
+        if (args.isEmpty()) {
+            pathStack.clear();
+            pathStack.add(vfsRoot);
+            return;
+        }
+        String name = args.getFirst();
+        if (name.equals("..")) {
+            if (pathStack.size() > 1) {
+                pathStack.removeLast();
+            }
+            return;
+        }
+        VfsFolder currentFolder = pathStack.getLast();
+        VfsNode found = findChild(currentFolder, name);
+        if (found == null) {
+            System.out.println("Папка " + name + " не найдена");
+            return;
+        }
+        if (found instanceof VfsFolder folder) {
+            pathStack.add(folder);
+        } else {
+            System.out.println(name + " не является папкой");
+        }
+    }
+
+    /**
+     * Выводит содержимое текущей папки. Папки помечаются слэшем в конце.
+     * @param args аргументы команды (пока не используются)
+     */
+    public static void handleLs(ArrayList<String> args) {
+        if (vfsRoot == null) {
+            System.out.println("VFS не загружена");
+            return;
+        }
+        VfsFolder current = pathStack.getLast();
+        for (VfsNode child : current.getChildren()) {
+            if (child instanceof VfsFolder) {
+                System.out.println(child.getName() + "/");
+            } else {
+                System.out.println(child.getName());
+            }
+        }
+    }
+
+    /**
+     * Выводит текущий путь внутри VFS от корня.
+     */
+    public static void handlePwd() {
+        StringBuilder path = new StringBuilder();
+        for (VfsFolder folder : pathStack) {
+            path.append("/").append(folder.getName());
+        }
+        System.out.println(path);
+    }
+
+    /**
+     * Очищает экран терминала
+     */
+    public static void handleClear() {
+        for (int i = 0; i < CLEAR_LINES_COUNT; i++) {
+            System.out.println();
+        }
+    }
+
+    /**
      * Выполняет одну команду с переданными аргументами
      *
      * @param command имя команды
@@ -238,18 +332,16 @@ public class Main {
     public static boolean executeCommand(String command, ArrayList<String> args) {
         switch (command) {
             case "ls":
-                if (args.isEmpty()) {
-                    System.out.println("ls");
-                    break;
-                }
-                System.out.println("Команда ls вызвана с аргументами " + args);
+                handleLs(args);
                 break;
             case "cd":
-                if (args.isEmpty()) {
-                    System.out.println("cd");
-                    break;
-                }
-                System.out.println("Команда cd вызвана с аргументами " + args);
+                handleCd(args);
+                break;
+            case "clear":
+                handleClear();
+                break;
+            case "pwd":
+                handlePwd();
                 break;
             case "exit":
                 System.out.println("Выполняется выход из программы...");
