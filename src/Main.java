@@ -6,6 +6,7 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.time.format.DateTimeFormatter;
 
 /**
  * Эмулятор командной строки UNIX-подобной ОС.
@@ -22,6 +23,7 @@ public class Main {
     private static final int BYTES_IN_KB = 1024;
     private static final int ROOT_DEPTH = 1;
     private static final String LS_FLAGS = "lah";
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     /**
      * Точка входа в приложение. Разбирает аргументы командной
@@ -402,7 +404,8 @@ public class Main {
         if (node instanceof VfsFile file) {
             size = file.getContent().length;
         }
-        return node.getOwner() + " " + formatSize(size, flags.contains("h")) + " " + name;
+        return String.join(" ", node.getOwner(), node.getGroup(), formatSize(size, flags.contains("h")),
+                node.getModified().format(DATE_FORMAT), name);
     }
 
     /**
