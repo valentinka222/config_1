@@ -288,6 +288,10 @@ public class Main {
      */
     public static List<VfsFolder> resolveFolder(String path) {
         List<VfsFolder> stack = new ArrayList<>(pathStack);
+        if (path.startsWith("/")) {
+            stack.clear();
+            stack.add(vfsRoot);
+        }
         for (String segment : path.split("/")) {
             if (!applySegment(stack, segment)) {
                 return null;
@@ -455,8 +459,11 @@ public class Main {
      */
     public static void handlePwd() {
         StringBuilder path = new StringBuilder();
-        for (VfsFolder folder : pathStack) {
+        for (VfsFolder folder : pathStack.subList(ROOT_DEPTH, pathStack.size())) {
             path.append("/").append(folder.getName());
+        }
+        if (path.isEmpty()) {
+            path.append("/");
         }
         System.out.println(path);
     }
