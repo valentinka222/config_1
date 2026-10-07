@@ -301,6 +301,28 @@ public class Main {
     }
 
     /**
+     * Находит файл или папку по пути (абсолютному или относительному).
+     *
+     * @param path путь к файлу или папке
+     * @return найденный узел или null, если такого нет
+     */
+    private static VfsNode resolveNode(String path) {
+        List<VfsFolder> folders = resolveFolder(path);
+        if (folders != null) {
+            return folders.getLast();
+        }
+        if (!path.contains("/")) {
+            return findChild(pathStack.getLast(), path);
+        }
+        int slash = path.lastIndexOf('/');
+        List<VfsFolder> parent = resolveFolder(path.substring(0, slash + 1));
+        if (parent == null) {
+            return null;
+        }
+        return findChild(parent.getLast(), path.substring(slash + 1));
+    }
+
+    /**
      * Меняет текущую папку. Поддерживает переход в подпапку по имени
      * и подъем на уровень через "..".
      * @param args аргументы команды: имя папки или ".."
@@ -493,8 +515,7 @@ public class Main {
         String newOwner = args.getFirst();
         String targetName = args.get(1);
 
-        VfsFolder currentFolder = pathStack.getLast();
-        VfsNode target = findChild(currentFolder, targetName);
+        VfsNode target = resolveNode(targetName);
         if (target == null) {
             System.out.println("Файл или папка " + targetName + " не найдена");
             return;
