@@ -249,6 +249,32 @@ public class Main {
     }
 
     /**
+     * Обрабатывает один элемент пути: ".." поднимает на уровень выше,
+     * "." и пустой элемент оставляют на месте, иначе спускается в подпапку.
+     *
+     * @param stack   копия пути, которую изменяем
+     * @param segment один элемент пути между слэшами
+     * @return true, если элемент обработан успешно
+     */
+    private static boolean applySegment(List<VfsFolder> stack, String segment) {
+        if (segment.isEmpty() || segment.equals(".")) {
+            return true;
+        }
+        if (segment.equals("..")) {
+            if (stack.size() > 1) {
+                stack.removeLast();
+            }
+            return true;
+        }
+        VfsNode found = findChild(stack.getLast(), segment);
+        if (found instanceof VfsFolder folder) {
+            stack.add(folder);
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * Меняет текущую папку. Поддерживает переход в подпапку по имени
      * и подъем на уровень через "..".
      * @param args аргументы команды: имя папки или ".."
@@ -263,24 +289,15 @@ public class Main {
             pathStack.add(vfsRoot);
             return;
         }
-        String name = args.getFirst();
-        if (name.equals("..")) {
-            if (pathStack.size() > 1) {
-                pathStack.removeLast();
+        String path = args.getFirst();
+        List<VfsFolder> newStack = new ArrayList<>(pathStack);
+        for (String segment : path.split("/")) {
+            if (!applySegment(newStack, segment)) {
+                System.out.println("Папка " + path + " не найдена");
+                return;
             }
-            return;
         }
-        VfsFolder currentFolder = pathStack.getLast();
-        VfsNode found = findChild(currentFolder, name);
-        if (found == null) {
-            System.out.println("Папка " + name + " не найдена");
-            return;
-        }
-        if (found instanceof VfsFolder folder) {
-            pathStack.add(folder);
-        } else {
-            System.out.println(name + " не является папкой");
-        }
+        pathStack = newStack;
     }
 
     /**
