@@ -18,6 +18,10 @@ public class Main {
     private static VfsFolder vfsRoot;
     private static List<VfsFolder> pathStack = new ArrayList<>();
     private static final int CLEAR_LINES_COUNT = 50;
+    private static final int FULL_ROOT_SIZE = 2;
+    private static final int BYTES_IN_KB = 1024;
+    private static final int ROOT_DEPTH = 1;
+    private static final String LS_FLAGS = "lah";
 
     /**
      * Точка входа в приложение. Разбирает аргументы командной
@@ -239,7 +243,7 @@ public class Main {
      * @param name искомое имя
      * @return найденый узел, либо null
      */
-    private static VfsNode findChild(VfsFolder folder, String name) {
+    public static VfsNode findChild(VfsFolder folder, String name) {
         for (VfsNode child : folder.getChildren()) {
             if (child.getName().equals(name)) {
                 return child;
@@ -256,12 +260,12 @@ public class Main {
      * @param segment один элемент пути между слэшами
      * @return true, если элемент обработан успешно
      */
-    private static boolean applySegment(List<VfsFolder> stack, String segment) {
+    public static boolean applySegment(List<VfsFolder> stack, String segment) {
         if (segment.isEmpty() || segment.equals(".")) {
             return true;
         }
         if (segment.equals("..")) {
-            if (stack.size() > 1) {
+            if (stack.size() > ROOT_DEPTH) {
                 stack.removeLast();
             }
             return true;
@@ -272,6 +276,22 @@ public class Main {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Проходит по пути и возвращает цепочку папок до его конца.
+     * Текущая директория не меняется.
+     * @param path путь вида Documents/Projects или ..
+     * @return новая цепочка папок или null
+     */
+    public static List<VfsFolder> resolveFolder(String path) {
+        List<VfsFolder> stack = new ArrayList<>(pathStack);
+        for (String segment : path.split("/")) {
+            if (!applySegment(stack, segment)) {
+                return null;
+            }
+        }
+        return stack;
     }
 
     /**
@@ -290,33 +310,141 @@ public class Main {
             return;
         }
         String path = args.getFirst();
-        List<VfsFolder> newStack = new ArrayList<>(pathStack);
-        for (String segment : path.split("/")) {
-            if (!applySegment(newStack, segment)) {
-                System.out.println("Папка " + path + " не найдена");
-                return;
-            }
+        List<VfsFolder> newStack = resolveFolder(path);
+        if (newStack == null) {
+            System.out.println("Папка " + path + " не найдена");
+            return;
         }
         pathStack = newStack;
     }
 
     /**
+     * Проверяет, является ли аргумент ключом
+     * @param arg аргумент
+     * @return true, если ключ
+     */
+    public static boolean isFlag(String arg) {
+        return arg.startsWith("-") && !arg.equals("-");
+    }
+
+    /**
+     * Собирает буквы ключей в одну строчку (-l -a = -la)
+     * @param args аргументы команды ls
+     * @return строка с буквами ключей или null
+     */
+    public static String collectLsFlags(List<String> args) {
+        StringBuilder flags = new StringBuilder();
+        for (String arg : args) {
+            if (!isFlag(arg)) {
+                continue;
+            }
+            for (char flag : arg.substring(1).toCharArray()) {
+                if (!LS_FLAGS.contains(String.valueOf(flag))) {
+                    System.out.println("ls: неизвестный ключ - " + flag);
+                    return null;
+                }
+                flags.append(flag);
+            }
+        }
+        return flags.toString();
+    }
+
+    /**
+     * Находит в аргументах команды ls путь
+     * @param args аргументы команды
+     * @return путь или null
+     */
+    public static String findLsPath(List<String> args) {
+        String path = null;
+        for (String arg : args) {
+            if (!isFlag(arg)) {
+                path = arg;
+            }
+        }
+        return path;
+    }
+
+    /**
+     * Форматирует размер в байтах.
+     *
+     * @param bytes размер в байтах
+     * @param humanReadable true для краткой записи
+     * @return строка с размером
+     */
+    public static String formatSize(long bytes, boolean humanReadable) {
+        if (!humanReadable || bytes < BYTES_IN_KB) {
+            return String.valueOf(bytes);
+        }
+        long kilobytes = bytes / BYTES_IN_KB;
+        if (kilobytes < BYTES_IN_KB) {
+            return kilobytes + "K";
+        }
+        return kilobytes / BYTES_IN_KB + "M";
+    }
+
+    /**
+     * Формирует строку для одного элемента в выводе ls. Папки помечаются
+     * слэшем.
+     *
+     * @param node файл или папка
+     * @param flags буквы ключей ls
+     * @return готовая строка для вывода
+     */
+    private static String formatEntry(VfsNode node, String flags) {
+        String name = node.getName();
+        if (node instanceof VfsFolder) {
+            name = name + "/";
+        }
+        if (!flags.contains("l")) {
+            return name;
+        }
+        long size = 0;
+        if (node instanceof VfsFile file) {
+            size = file.getContent().length;
+        }
+        return node.getOwner() + " " + formatSize(size, flags.contains("h")) + " " + name;
+    }
+
+    /**
+     * Выводит содержимое папки. Скрытые элементы только с -a.
+     * @param folder папка
+     * @param flags буквы ключей ls
+     */
+    public static void printEntries(VfsFolder folder, String flags) {
+        for (VfsNode child : folder.getChildren()) {
+            boolean hidden = child.getName().startsWith(".");
+            if (flags.contains("a") || !hidden) {
+                System.out.println(formatEntry(child, flags));
+            }
+        }
+    }
+
+    /**
      * Выводит содержимое текущей папки. Папки помечаются слэшем в конце.
-     * @param args аргументы команды (пока не используются)
+     * Поддерживает ключи -l, -a, -h
+     *
+     * @param args ключи и необязательный путь
      */
     public static void handleLs(ArrayList<String> args) {
         if (vfsRoot == null) {
             System.out.println("VFS не загружена");
             return;
         }
-        VfsFolder current = pathStack.getLast();
-        for (VfsNode child : current.getChildren()) {
-            if (child instanceof VfsFolder) {
-                System.out.println(child.getName() + "/");
-            } else {
-                System.out.println(child.getName());
-            }
+        String flags = collectLsFlags(args);
+        if (flags == null) {
+            return;
         }
+        VfsFolder target = pathStack.getLast();
+        String path = findLsPath(args);
+        if (path != null) {
+            List<VfsFolder> stack = resolveFolder(path);
+            if (stack == null) {
+                System.out.println("ls: " + path + ": нет такой папки");
+                return;
+            }
+            target = stack.getLast();
+        }
+        printEntries(target, flags);
     }
 
     /**
@@ -348,7 +476,7 @@ public class Main {
             System.out.println("VFS не загружена");
             return;
         }
-        if (args.size() != 2) {
+        if (args.size() != FULL_ROOT_SIZE) {
             System.out.println("Неверный синтаксис команды");
             return;
         }

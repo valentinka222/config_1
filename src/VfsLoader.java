@@ -33,7 +33,7 @@ public class VfsLoader {
         String name = element.getAttribute("name");
 
         if (element.getTagName().equals("file")) {
-            byte[] content = Base64.getDecoder().decode(element.getTextContent());
+            byte[] content = Base64.getMimeDecoder().decode(element.getTextContent());
             return new VfsFile(name, content);
         }
 

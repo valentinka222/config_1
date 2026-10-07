@@ -1,10 +1,11 @@
 ls
-chown ivan readme.txt
-ls
 cd Documents
-ls
+ls -l
+chown ivan readme.txt
+ls -l
 chown petya Projects
-ls
+ls -l
+cd ..
 chown
 chown ivan
 chown ivan nonexistent.txt

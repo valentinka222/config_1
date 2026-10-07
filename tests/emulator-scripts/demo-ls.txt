@@ -1,0 +1,16 @@
+ls
+ls -a
+ls -l
+ls -la
+ls -l -a -h
+ls -lh Documents
+ls -a Documents
+ls Documents/Projects
+ls Documents/Projects/config1/..
+ls -z
+ls nonexistent
+cd Documents
+ls ..
+ls -ah .
+ls Projects
+exit
